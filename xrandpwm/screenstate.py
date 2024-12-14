@@ -19,9 +19,10 @@ class ScreenResolutionState(BaseModel):
     min: Vector2D = Field()
     dim: Vector2D = Field()
     max: Vector2D = Field()
+    dpi: Vector2D = Field()
 
     def __str__(self, ind: str = "", header: bool = True):
         # ind2 = ind + "  " if header else ind
         parts = [f"{ind}{BLUE}{self.__class__.__name__}{END}:"] if header else []
-        parts.append(f"min: {self.min}, dim: {self.dim}, max: {self.max}")
+        parts.append(f"min: {self.min}, dim: {self.dim}, max: {self.max} (dpi: {self.dpi})")
         return " ".join(parts)

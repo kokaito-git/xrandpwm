@@ -1,5 +1,6 @@
 .venv
 .builder.venv
+.idea
 __pycache__
 
 xrandpwm.egg-info
