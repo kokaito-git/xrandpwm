@@ -1,0 +1,13 @@
+.venv
+.builder.venv
+__pycache__
+
+xrandpwm.egg-info
+xrandpwm/__pycache__
+xrandpwm/pyrightconfig.json
+
+
+dist
+dist/*
+
+
