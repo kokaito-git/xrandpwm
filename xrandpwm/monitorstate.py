@@ -292,7 +292,7 @@ class MonitorPanning(BaseModel):
         # Tracking
         if self.tracking is not None:
             s += f"/{self.tracking.to_cmd(exclude_non_pos=False)}"
-        elif self.borders is not None:
+        elif self.tracking is None and self.borders is not None:
             s += "/"
 
         # Borders
