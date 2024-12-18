@@ -35,6 +35,7 @@ print(msb2)
 
 from .utils import Geometry, Vector2D, Vector2DF, Vector3D, Vector3DF
 from .monitorstate import (
+    ROTATION_T, ROTATION, REFLECTION_T, REFLECTION, SCALING_MODE_T, SCALING_MODE, TEAR_FREE_T, TEAR_FREE,
     SingleResolution, MonitorResolutions, MonitorTransformation, MonitorGamma, MonitorBorders, MonitorPanning,
     BaseMonitorData, DisconnectedMonitorData, ConnectedMonitorData, InactiveMonitorData, ActiveMonitorData,
     MonitorState
@@ -44,6 +45,9 @@ from .monitorbundle import MonitorStateBundle, MonitorStateBundleAssembler
 __all__ = [
     "Geometry", "Vector2D", "Vector2DF", "Vector3D", "Vector3DF",
     ####################################################
+    "ROTATION_T", "ROTATION", "REFLECTION_T", "REFLECTION", "SCALING_MODE_T", "SCALING_MODE",
+    "TEAR_FREE_T", "TEAR_FREE",
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     "SingleResolution", "MonitorResolutions", "MonitorTransformation", "MonitorGamma", "MonitorBorders",
     "MonitorPanning", "BaseMonitorData", "DisconnectedMonitorData", "ConnectedMonitorData", "InactiveMonitorData",
     "ActiveMonitorData", "MonitorState",
@@ -53,6 +57,6 @@ __all__ = [
 
 if __name__ == "__main__":
     msb = MonitorStateBundleAssembler.assemble()
-    # print(msb)
+    print(msb)
     # m = msb.monitors["DVI-D-0"]
     # print(m)

@@ -3,6 +3,15 @@ from kcolors.refs import *  # pyright: ignore[]
 from typing import List, Literal, Optional, Tuple, Union, Any
 from pydantic import BaseModel, Field, model_validator
 
+ROTATION_T = Literal["normal", "left", "inverted", "right"]
+ROTATION: List[ROTATION_T] = ["normal", "left", "inverted", "right"]
+REFLECTION_T = Literal["normal", "x", "y", "xy"]
+REFLECTION: List[REFLECTION_T] = ["normal", "x", "y", "xy"]
+SCALING_MODE_T = Literal["None", "Full", "Center", "Full aspect"]
+SCALING_MODE: List[SCALING_MODE_T] = ["None", "Full", "Center", "Full aspect"]
+TEAR_FREE_T = Literal["auto", "off", "on"]
+TEAR_FREE: List[TEAR_FREE_T] = ["auto", "off", "on"]
+
 
 class SingleResolution(BaseModel, frozen=True):
     """
@@ -416,8 +425,8 @@ class ActiveMonitorData(ConnectedMonitorData):
 
     # Only active:
     geometry: Geometry
-    rotation: Literal["normal", "left", "inverted", "right"]
-    reflection: Literal["normal", "x", "y", "xy"]
+    rotation: ROTATION_T
+    reflection: REFLECTION_T
     transformation: MonitorTransformation
     gamma: MonitorGamma
     brightness: float
@@ -426,8 +435,8 @@ class ActiveMonitorData(ConnectedMonitorData):
     panning: Optional[MonitorPanning]
 
     # Solo disponible en ciertos entornos (ej. en mi host aparecen pero en mi vm no)
-    scaling_mode: Optional[Literal["Full", "Center", "Full aspect"]]
-    tear_free: Optional[Literal["off", "on", "auto"]]
+    scaling_mode: Optional[SCALING_MODE_T]
+    tear_free: Optional[TEAR_FREE_T]
 
     def __str__(self, ind: str = "", header: bool = True) -> str:
         ind2 = ind + "  " if header else ind
@@ -461,16 +470,18 @@ class MonitorState(BaseModel):
 
     - `md`: Unión de `DisconnectedMonitorData`, `InactiveMonitorData` y `ActiveMonitorData`.
 
-    Propiedades principales:
+    # Todos los monitores
     - `name`: Nombre del monitor.
     - `primary`: Indica si es el monitor principal.
     - `connected`: Indica si el monitor está conectado.
     - `active`: Indica si el monitor está activo.
 
+    Monitores Inactivos (desde):
     - `resolutions`: Resoluciones soportadas (disponibles solo si el monitor está conectado).
 
-    - `geometry`, `rotation`, `reflection`, `transformation`, `gamma`, `brightness`, `panning`, `scaling_mode`, `tear_free`:
-      Propiedades disponibles solo si el monitor está activo.
+    # Monitores Activos (desde:
+        - `geometry`, `rotation`, `reflection`, `transformation`, `gamma`, `brightness`, `panning`,
+            `scaling_mode`, `tear_free`:
     """
 
     md: Union[DisconnectedMonitorData, InactiveMonitorData, ActiveMonitorData]
@@ -506,13 +517,13 @@ class MonitorState(BaseModel):
         raise AttributeError("Geometry is only available for active monitors.")
 
     @property
-    def rotation(self) -> Literal["normal", "left", "inverted", "right"]:
+    def rotation(self) -> ROTATION_T:
         if self.active:
             return self.md.rotation
         raise AttributeError("Rotation is only available for active monitors.")
 
     @property
-    def reflection(self) -> Literal["normal", "x", "y", "xy"]:
+    def reflection(self) -> REFLECTION_T:
         if self.active:
             return self.md.reflection
         raise AttributeError("Reflection is only available for active monitors.")
@@ -542,13 +553,13 @@ class MonitorState(BaseModel):
         raise AttributeError("Panning is only available for active monitors")
 
     @property
-    def scaling_mode(self) -> Optional[Literal["Full", "Center", "Full aspect"]]:
+    def scaling_mode(self) -> Optional[SCALING_MODE_T]:
         if self.active:
             return self.md.scaling_mode
         raise AttributeError("Scaling Mode is only available for active monitors")
 
     @property
-    def tear_free(self) -> Optional[Literal["off", "on", "auto"]]:
+    def tear_free(self) -> Optional[TEAR_FREE_T]:
         if self.active:
             return self.md.tear_free
         raise AttributeError("Scaling Mode is only available for active monitors")

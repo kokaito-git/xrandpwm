@@ -5,19 +5,10 @@ from typing import Dict, List, Literal, Optional, Tuple, Iterator
 from kcolors.refs import *  # pyright: ignore[]
 from pydantic import BaseModel, Field
 
-from .monitorstate import (
-    MonitorState,
-    MonitorTransformation,
-    MonitorGamma,
-    MonitorPanning,
-    MonitorResolutions,
-    ActiveMonitorData,
-    InactiveMonitorData,
-    DisconnectedMonitorData,
-    SingleResolution,
-    MonitorBorders,
-    BaseMonitorData,
-)
+from .monitorstate import (MonitorTransformation, MonitorGamma, MonitorBorders,
+                           MonitorPanning, SingleResolution, MonitorResolutions, TEAR_FREE_T, ROTATION_T, REFLECTION_T)
+from .monitorstate import BaseMonitorData, DisconnectedMonitorData, InactiveMonitorData, ActiveMonitorData, MonitorState
+from .monitorstate import SCALING_MODE_T
 from .screenstate import ScreenResolutionState
 from .utils import DevError, Geometry, Vector2D, Vector2DF, Vector3DF
 
@@ -180,11 +171,11 @@ class MonitorStateBundleAssembler:
         # scaling_modes y tear_free son valores solo disponibles en ciertos sistemas
         # xrandr --output DVI-D-0 --set "scaling mode" "Full aspect"
         scaling_modes: Dict[
-            str, Optional[Literal["Full", "Center", "Full aspect"]]
+            str, Optional[SCALING_MODE_T]
         ] = cls.__get_scaling_modes(active_raw_advanced_datas)
 
         # xrandr --output DVI-D-0 --set "TearFree" "on"
-        tear_frees: Dict[str, Optional[Literal["off", "on", "auto"]]] = (
+        tear_frees: Dict[str, Optional[TEAR_FREE_T]] = (
             cls.__get_tear_frees(active_raw_advanced_datas)
         )
 
@@ -223,8 +214,8 @@ class MonitorStateBundleAssembler:
             gammas: Dict[str, MonitorGamma],
             brightnesses: Dict[str, float],
             pannings: Dict[str, Optional[MonitorPanning]],
-            scaling_modes: Dict[str, Optional[Literal["Full", "Center", "Full aspect"]]],
-            tear_frees: Dict[str, Optional[Literal["off", "on", "auto"]]],
+            scaling_modes: Dict[str, Optional[SCALING_MODE_T]],
+            tear_frees: Dict[str, Optional[TEAR_FREE_T]],
     ) -> BaseMonitorData:
         raw_header = all_raw_headers[monitor_name]
         # Si el monitor no está conectado entonces geometry, rotation y reflection serán None
@@ -311,8 +302,8 @@ class MonitorStateBundleAssembler:
         bool,
         bool,
         Geometry,
-        Optional[Literal["normal", "left", "inverted", "right"]],
-        Optional[Literal["normal", "x", "y", "xy"]],
+        Optional[ROTATION_T],
+        Optional[REFLECTION_T],
     ]:
         """Extrae las distintas partes de la cabecera de un monitor (salida de xrandr sin argumentos).
         Además de la cabecera también hay que pasarle los nombres de monitores activos."""
@@ -332,12 +323,12 @@ class MonitorStateBundleAssembler:
             geometry = None
 
         # Rotation
-        rotation: Optional[Literal["normal", "left", "inverted", "right"]] = None
+        rotation: Optional[ROTATION_T] = None
         if active:
             rotation = cls.__parse_rotation(raw_header)
 
         # Reflection
-        reflection: Optional[Literal["normal", "x", "y", "xy"]] = None
+        reflection: Optional[REFLECTION_T] = None
         if active:
             reflection = cls.__parse_reflection(raw_header)
 
@@ -346,47 +337,31 @@ class MonitorStateBundleAssembler:
     @staticmethod
     def __parse_rotation(
             raw_header: str,
-    ) -> Literal["normal", "left", "inverted", "right"]:
+    ) -> ROTATION_T:
         pattern = r"(normal|left|inverted|right) ((X axis|Y axis|X and Y axis)\s)?\("
         match = re.search(pattern, raw_header)
-        rotation: Literal["normal", "left", "inverted", "right"] = "normal"
         if match is None:
-            return rotation
-
-        match match.group(1):
-            case "normal":
-                rotation = "normal"
-            case "left":
-                rotation = "left"
-            case "inverted":
-                rotation = "inverted"
-            case "right":
-                rotation = "right"
-            case _:
-                raise DevError(f"Match de rotación inválido: {match.group(1)}")
-        return rotation
+            return "normal"
+        return match.group(1)
 
     @staticmethod
     def __parse_reflection(
             raw_header: str,
-    ) -> Optional[Literal["normal", "x", "y", "xy"]]:
+    ) -> REFLECTION_T:
         pattern = r"(?:normal|left|inverted|right) (X axis|Y axis|X and Y axis)\s\("
         match = re.search(pattern, raw_header)
-        reflection: Literal["normal", "x", "y", "xy"] = "normal"
         if match is None:
-            return reflection
+            return "normal"
 
         match match.group(1):
             case "X and Y axis":
-                reflection = "xy"
+                return "xy"
             case "X axis":
-                reflection = "x"
+                return "x"
             case "Y axis":
-                reflection = "y"
-            case _:
-                raise DevError(f"Match de translación inválido: {match.group(1)}")
+                return "y"
 
-        return reflection
+        raise DevError(f"Match de reflection inválido: {match.group(1)}")
 
     @classmethod
     def __parse_raw_monitor_resolutions(
@@ -671,22 +646,17 @@ class MonitorStateBundleAssembler:
 
     @staticmethod
     def __get_scaling_modes(active_raw_advanced_datas: Dict[str, str]):
-        scaling_modes: Dict[
-            str, Optional[Literal["Full", "Center", "Full aspect"]]
-        ] = {}
-
+        scaling_modes: Dict[str, Optional[SCALING_MODE_T]] = {}
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
             cmd += "| grep 'scaling mode:' | sed 's/scaling mode://'"
-            result = subprocess.run(
-                ["bash", "-c", cmd], capture_output=True, text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
             mode = result.stdout.strip()
             if not mode:
                 scaling_modes[monitor_name] = None
             elif mode == "None":
-                scaling_modes[monitor_name] = None
+                scaling_modes[monitor_name] = "None"
             elif mode == "Full":
                 scaling_modes[monitor_name] = "Full"
             elif mode == "Center":
@@ -704,8 +674,8 @@ class MonitorStateBundleAssembler:
     @classmethod
     def __get_tear_frees(
             cls, active_raw_advanced_datas: Dict[str, str]
-    ) -> Dict[str, Optional[Literal["off", "on", "auto"]]]:
-        tear_frees: Dict[str, Optional[Literal["off", "on", "auto"]]] = {}
+    ) -> Dict[str, Optional[TEAR_FREE_T]]:
+        tear_frees: Dict[str, Optional[TEAR_FREE_T]] = {}
 
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
@@ -717,17 +687,14 @@ class MonitorStateBundleAssembler:
             tfree = result.stdout.strip()
             if not tfree:
                 tear_frees[monitor_name] = None
+            elif tfree == "auto":
+                tear_frees[monitor_name] = "auto"
             elif tfree == "off":
                 tear_frees[monitor_name] = "off"
             elif tfree == "on":
                 tear_frees[monitor_name] = "on"
-            elif tfree == "auto":
-                tear_frees[monitor_name] = "auto"
             else:
-                raise DevError(
-                    "Se ha obtenido un valor desconocido de lo que se supone que es "
-                    f"el tear free: '{tfree}'"
-                )
+                raise DevError("Se ha obtenido un valor desconocido de lo que se supone que es el tear free: '{tfree}'")
 
         return tear_frees
 
@@ -737,10 +704,8 @@ class MonitorStateBundleAssembler:
         cmd = f"xrandr {args}"
         result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
         if result.returncode != 0 or result.stdout is None:
-            raise RuntimeError(
-                f"[!] Error: No se ha podido leer la información con '{cmd}'."
-                f" Código de salida {result.returncode}"
-            )
+            raise RuntimeError(f"[!] Error: No se ha podido leer la información con '{cmd}'. "
+                               f"Código de salida {result.returncode}")
         return result
 
     @staticmethod
@@ -748,8 +713,6 @@ class MonitorStateBundleAssembler:
         cmd = f"xdpyinfo {args}"
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode != 0 or result.stdout is None:
-            raise RuntimeError(
-                f"[!] Error: No se ha podido leer la información con '{cmd}'."
-                f" Código de salida {result.returncode}"
-            )
+            raise RuntimeError(f"[!] Error: No se ha podido leer la información con '{cmd}'. "
+                               f"Código de salida {result.returncode}")
         return result
