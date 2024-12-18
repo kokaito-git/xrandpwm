@@ -53,5 +53,6 @@ __all__ = [
 
 if __name__ == "__main__":
     msb = MonitorStateBundleAssembler.assemble()
-    print(msb)
-    # print(screen)
+    # print(msb)
+    # m = msb.monitors["DVI-D-0"]
+    # print(m)

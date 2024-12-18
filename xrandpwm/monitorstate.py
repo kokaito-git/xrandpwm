@@ -201,7 +201,15 @@ class MonitorTransformation(BaseModel):
     translation: Vector2DF
     homogeneous: Vector3DF
 
-    def __str__(self, ind: str = "", header: bool = False) -> str:
+    def to_cmd(self):
+        s, r, t, h = self.scale, self.rotation, self.translation, self.homogeneous
+        return (
+            f"{s.x or 0},{r.y or 0},{t.x or 0},"
+            f"{r.x or 0},{s.y or 0},{t.y or 0},"
+            f"{h.x or 0},{h.y or 0},{h.z or 0}"
+        )
+
+    def __str__(self, ind: str = "", header: bool = True) -> str:
         ind2 = ind + "  " if header else ind
         parts = [f"{ind}{BLUE}{self.__class__.__name__}{END}:"] if header else []
 
@@ -226,8 +234,14 @@ class MonitorGamma(BaseModel):
     g: float
     b: float
 
+    def to_cmd(self):
+        """
+        Devuelve una cadena que puede ser fácilmente precedida por --gamma para aplicar él gamma
+        """
+        return f"{self.r or 0}:{self.g or 0}:{self.b or 0}"
+
     def __str__(self, ind: str = "", header: bool = True) -> str:
-        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind} "
+        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind}"
         s += f"{self.r}:{self.g}:{self.b}"
         return s
 
@@ -247,6 +261,9 @@ class MonitorBorders(BaseModel):
     right: int
     bottom: int
 
+    def to_cmd(self):
+        return f"{self.left}/{self.top}/{self.right}/{self.bottom}"
+
     def __str__(self) -> str:
         cname = self.__class__.__name__
         return f"{BLUE}{cname}{END}: {self.left}/{self.top}/{self.right}/{self.bottom}"
@@ -264,19 +281,29 @@ class MonitorPanning(BaseModel):
             inferior). Estos bordes pueden ajustarse para limitar el área visible o el desplazamiento del monitor.
     """
 
-    panning: Geometry
-    tracking: Optional[Geometry]
-    borders: Optional[MonitorBorders]
+    geometry: Geometry
+    tracking: Optional[Geometry] = Field(default=None)
+    borders: Optional[MonitorBorders] = Field(default=None)
+
+    def to_cmd(self):
+        # Geometría
+        s = self.geometry.to_cmd(exclude_non_pos=False)
+
+        # Tracking
+        if self.tracking is not None:
+            s += f"/{self.tracking.to_cmd(exclude_non_pos=False)}"
+        elif self.borders is not None:
+            s += "/"
+
+        # Borders
+        if self.borders is not None:
+            s += f"/{self.borders.to_cmd()}"
+
+        return s
 
     def __str__(self, ind: str = "", header: bool = True) -> str:
-        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind} "
-        s += self.panning.__str__(ind="", header=False)
-        if self.tracking is not None:
-            s += f"/{self.tracking}"
-        elif self.tracking is None and self.borders is not None:
-            s += "/0x0+0+0"
-        if self.borders is not None:
-            s += f"/{self.borders}"
+        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind}"
+        s += self.to_cmd()
         return s
 
 
@@ -347,6 +374,7 @@ class ConnectedMonitorData(BaseMonitorData):
     def __pre_validation(cls, data: Any) -> Any:
         assert cls != ConnectedMonitorData, f"{cls.__name__} no puede ser instanciado directamente."
         return data
+
 
 class InactiveMonitorData(ConnectedMonitorData):
     """
