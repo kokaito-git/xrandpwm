@@ -53,4 +53,5 @@ __all__ = [
 
 if __name__ == "__main__":
     msb = MonitorStateBundleAssembler.assemble()
-    print(msb.screen)
+    print(msb)
+    # print(screen)

@@ -133,7 +133,7 @@ class MonitorResolutions(BaseModel):
         # Calculamos los tamaños de las row
         row_widths = self.__calculate_row_widths(res_str_rows)
 
-        # Tamaño custom para la row de los simbólos de las frecuencias (4 de ancho)
+        # Tamaño custom para la row de los símbolos de las frecuencias (4 de ancho)
         for i in range(3, len(row_widths), 2):
             row_widths[i] = max(row_widths[i], 4)
 
@@ -228,7 +228,7 @@ class MonitorGamma(BaseModel):
 
     def __str__(self, ind: str = "", header: bool = True) -> str:
         s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind} "
-        s += f"rgb({self.r}, {self.g}, {self.b})"
+        s += f"{self.r}:{self.g}:{self.b}"
         return s
 
 
@@ -254,12 +254,14 @@ class MonitorBorders(BaseModel):
 
 class MonitorPanning(BaseModel):
     """
-    Representa los bordes configurados para el monitor.
+    Representa la configuración de panning (área virtual de desplazamiento) y bordes de un monitor.
 
-    - `left`: Borde izquierdo en píxeles.
-    - `top`: Borde superior en píxeles.
-    - `right`: Borde derecho en píxeles.
-    - `bottom`: Borde inferior en píxeles.
+    Atributos:
+    - `panning` (Geometry): Define el área de panning, es decir, el tamaño del área virtual del monitor.
+    - `tracking` (Optional[Geometry]): Especifica el área de seguimiento dentro del panning, que limita el movimiento
+            del cursor. Si no se especifica, se considera que el área de seguimiento es igual al área de panning.
+    - `borders` (Optional[MonitorBorders]): Define los bordes del monitor en píxeles (izquierda, superior, derecha,
+            inferior). Estos bordes pueden ajustarse para limitar el área visible o el desplazamiento del monitor.
     """
 
     panning: Geometry
