@@ -41,6 +41,7 @@ from .monitorstate import (
     MonitorState
 )
 from .monitorbundle import MonitorStateBundle, MonitorStateBundleAssembler
+from .command import XRandrCommandGenerator, XRandr
 
 __all__ = [
     "Geometry", "Vector2D", "Vector2DF", "Vector3D", "Vector3DF",
@@ -51,12 +52,44 @@ __all__ = [
     "SingleResolution", "MonitorResolutions", "MonitorTransformation", "MonitorGamma", "MonitorBorders",
     "MonitorPanning", "BaseMonitorData", "DisconnectedMonitorData", "ConnectedMonitorData", "InactiveMonitorData",
     "ActiveMonitorData", "MonitorState",
+
     ####################################################
-    "MonitorStateBundle", "MonitorStateBundleAssembler"
+    "MonitorStateBundle", "MonitorStateBundleAssembler",
+
+    ####################################################
+    "XRandrCommandGenerator", "XRandr"
 ]
 
 if __name__ == "__main__":
     msb = MonitorStateBundleAssembler.assemble()
     print(msb)
-    # m = msb.monitors["DVI-D-0"]
-    # print(m)
+
+    m = msb.monitors["DVI-D-0"]
+    print(m)
+
+    sm_output = XRandrCommandGenerator.monitor(
+        output="DVI-D-0",
+        active=True,
+        mode=Vector2D(x=1920, y=1080),
+        rate=60.0,
+        pos=Vector2D(x=1920, y=0),
+        rotation="left",
+        reflection="xy",
+        transformation=MonitorTransformation(
+            scale=Vector2DF(x=1.0, y=1.0),
+            rotation=Vector2DF(x=0., y=0.),
+            translation=Vector2DF(x=0., y=0.),
+            homogeneous=Vector3DF(x=0., y=0., z=1.)
+        ),
+        gamma=MonitorGamma(r=1., g=1., b=1.),
+        brightness=1.1,
+        panning=MonitorPanning(geometry=Geometry(w=1920, h=1080, x=0, y=0), tracking=None, borders=None),
+        scaling_mode="Full aspect",
+        tear_free="on"
+    )
+    print(sm_output)
+
+    dim = Vector2D(x=1920, y=1080)
+    dpi = Vector2D(x=96, y=96)
+    r = XRandrCommandGenerator.screen(dim=dim, dpi=dpi)
+    print(r)

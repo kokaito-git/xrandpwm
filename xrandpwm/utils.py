@@ -43,16 +43,10 @@ class Geometry(BaseModel):
             raise ValueError(f"w y h tienen que ser mayores que 0: {self!r}")
         return self
 
-    def to_cmd(self, exclude_non_pos: bool = False):
-        s = f"{self.w}x{self.h}"
-        if not exclude_non_pos or self.x or self.y:
-            s += f"{self.x:+}{self.y:+}"
-        return s
-
     def __str__(self, ind: str = "", header: bool = True) -> str:
         ind2 = ind + "  " if header else ind
         parts = [f"{ind}{BLUE}{self.__class__.__name__}{END}"] if header else []
-        parts.append(f"{ind2}{self.to_cmd(exclude_non_pos=False)}")
+        parts.append(f"{ind2}{self.w}x{self.h}{self.x:+}{self.y:+}")
         return "\n".join(parts)
 
 

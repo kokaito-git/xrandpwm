@@ -132,7 +132,7 @@ class MonitorResolutions(BaseModel):
 
     def __str__(self, ind: str = "", header: bool = True) -> str:
         ind2 = ind + "  " if header else ind
-        parts = [f"{ind}{BLUE}{self.__class__.__name__}{END}:"] if header else []
+        parts = [f"{ind}{BLUE}Resolutions{END}:"] if header else []
 
         res_str_rows = []
         # Creamos las líneas separadas por rows (lista de listas de str)
@@ -166,7 +166,7 @@ class MonitorResolutions(BaseModel):
 
     def __validate_resolutions(self):
         if not self.resolutions:
-            raise ValueError("Debes indicar al menos una resolución.")
+            raise ValueError("Al menos debes indicar una resolución.")
 
     def __validate_preferred(self):
         if self.preferred is not None:
@@ -210,17 +210,9 @@ class MonitorTransformation(BaseModel):
     translation: Vector2DF
     homogeneous: Vector3DF
 
-    def to_cmd(self):
-        s, r, t, h = self.scale, self.rotation, self.translation, self.homogeneous
-        return (
-            f"{s.x or 0},{r.y or 0},{t.x or 0},"
-            f"{r.x or 0},{s.y or 0},{t.y or 0},"
-            f"{h.x or 0},{h.y or 0},{h.z or 0}"
-        )
-
     def __str__(self, ind: str = "", header: bool = True) -> str:
         ind2 = ind + "  " if header else ind
-        parts = [f"{ind}{BLUE}{self.__class__.__name__}{END}:"] if header else []
+        parts = [f"{ind}{BLUE}Transformation{END}:"] if header else []
 
         parts.extend((
             f"{ind2}{self.scale.x:.6f} {self.rotation.y:.6f} {self.translation.x:.6f}",
@@ -243,14 +235,8 @@ class MonitorGamma(BaseModel):
     g: float
     b: float
 
-    def to_cmd(self):
-        """
-        Devuelve una cadena que puede ser fácilmente precedida por --gamma para aplicar él gamma
-        """
-        return f"{self.r or 0}:{self.g or 0}:{self.b or 0}"
-
     def __str__(self, ind: str = "", header: bool = True) -> str:
-        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind}"
+        s = f"{ind}{BLUE}Gamma{END}: " if header else f"{ind}"
         s += f"{self.r}:{self.g}:{self.b}"
         return s
 
@@ -269,9 +255,6 @@ class MonitorBorders(BaseModel):
     top: int
     right: int
     bottom: int
-
-    def to_cmd(self):
-        return f"{self.left}/{self.top}/{self.right}/{self.bottom}"
 
     def __str__(self) -> str:
         cname = self.__class__.__name__
@@ -294,25 +277,22 @@ class MonitorPanning(BaseModel):
     tracking: Optional[Geometry] = Field(default=None)
     borders: Optional[MonitorBorders] = Field(default=None)
 
-    def to_cmd(self):
-        # Geometría
-        s = self.geometry.to_cmd(exclude_non_pos=False)
+    @staticmethod
+    def __parse_geometry(geometry: Geometry):
+        return f"{geometry.w}x{geometry.h}{geometry.x:+}{geometry.y:+}"
 
-        # Tracking
+    def __str__(self, ind: str = "", header: bool = True) -> str:
+        s = f"{ind}{BLUE}Panning{END}: " if header else f"{ind}"
+
+        s += f"{self.__parse_geometry(self.geometry)}"
         if self.tracking is not None:
-            s += f"/{self.tracking.to_cmd(exclude_non_pos=False)}"
+            s += f"/{self.__parse_geometry(self.tracking)}"
         elif self.tracking is None and self.borders is not None:
             s += "/"
 
-        # Borders
         if self.borders is not None:
-            s += f"/{self.borders.to_cmd()}"
+            s += f"/{self.__parse_borders(self.panning.borders)}"
 
-        return s
-
-    def __str__(self, ind: str = "", header: bool = True) -> str:
-        s = f"{ind}{BLUE}{self.__class__.__name__}{END}: " if header else f"{ind}"
-        s += self.to_cmd()
         return s
 
 
@@ -372,7 +352,7 @@ class ConnectedMonitorData(BaseMonitorData):
     Representa un monitor conectado (pero no necesariamente activo).
     - `name`: Nombre del monitor.
     - `primary`: Indica si es el monitor principal.
-    - `resolutions`: Objeto `MonitorResolutions` que contiene las resoluciones soportadas.
+    - `resolutions`: Resoluciones soportadas como un objeto 'MonitorResolutions'.
     """
     class_name: Literal["ConnectedMonitorData"] = Field(default="ConnectedMonitorData", init=False)
     connected: bool = Field(default=True, init=False, exclude=True)
@@ -390,7 +370,7 @@ class InactiveMonitorData(ConnectedMonitorData):
     Representa un monitor conectado pero no activo.
     - `name`: Nombre del monitor.
     - `primary`: Indica si es el monitor principal.
-    - `resolutions`: Objeto `MonitorResolutions` que contiene las resoluciones soportadas.
+    - `resolutions`: Resoluciones soportadas como un objeto 'MonitorResolutions'.
     """
     class_name: Literal["InactiveMonitorData"] = Field(default="InactiveMonitorData", init=False)
     active: bool = Field(default=False, init=False, exclude=True)
@@ -409,7 +389,9 @@ class ActiveMonitorData(ConnectedMonitorData):
     Representa un monitor activo.
     - `name`: Nombre del monitor.
     - `primary`: Indica si es el monitor principal.
-    - `resolutions`: Objeto `MonitorResolutions` que contiene las resoluciones soportadas.
+    - `connected`: Indica si el monitor está conectado.
+    - `active`: Indica si el monitor está activo.
+    - `resolutions`: Resoluciones soportadas como un objeto 'MonitorResolutions'.
     - `geometry`: Geometría del monitor como un objeto `Geometry`.
     - `rotation`: Rotación del monitor (normal, left, inverted, right).
     - `reflection`: Reflexión del monitor (normal, x, y, xy).
@@ -417,8 +399,8 @@ class ActiveMonitorData(ConnectedMonitorData):
     - `gamma`: Configuración gamma como un objeto `MonitorGamma`.
     - `brightness`: Brillo del monitor como un valor flotante.
     - `panning`: Configuración de panning (opcional).
-    - `scaling_mode`: Modo de escalado (Full, Center, Full aspect).
-    - `tear_free`: Configuración de tear-free (off, on, auto).
+    - `scaling_mode`: Modo de escalado (None, Full, Center, Full aspect).
+    - `tear_free`: Configuración de tear-free (auto, off, on).
     """
     class_name: Literal["ActiveMonitorData"] = Field(default="ActiveMonitorData", init=False)
     active: bool = Field(default=True, init=False, exclude=True)
@@ -450,7 +432,7 @@ class ActiveMonitorData(ConnectedMonitorData):
 
         parts.append(self.resolutions.__str__(ind=ind3, header=True))
         parts.append(self.gamma.__str__(ind=ind3, header=True))
-        parts.append(f"{ind3}{BLUE}MonitorBrightness{END}: {self.brightness}")
+        parts.append(f"{ind3}{BLUE}Brightness{END}: {self.brightness}")
         parts.append(self.transformation.__str__(ind=ind3, header=True))
         if self.panning is not None:
             parts.append(self.panning.__str__(ind=ind3))
@@ -477,11 +459,19 @@ class MonitorState(BaseModel):
     - `active`: Indica si el monitor está activo.
 
     Monitores Inactivos (desde):
-    - `resolutions`: Resoluciones soportadas (disponibles solo si el monitor está conectado).
+    - `resolutions`: Resoluciones soportadas como un objeto 'MonitorResolutions'.
 
-    # Monitores Activos (desde:
-        - `geometry`, `rotation`, `reflection`, `transformation`, `gamma`, `brightness`, `panning`,
-            `scaling_mode`, `tear_free`:
+
+    Monitores Activos (desde):
+    - `geometry`: Geometría del monitor como un objeto `Geometry`.
+    - `rotation`: Rotación del monitor (normal, left, inverted, right).
+    - `reflection`: Reflexión del monitor (normal, x, y, xy).
+    - `transformation`: Transformación aplicada al monitor como un objeto `MonitorTransformation`.
+    - `gamma`: Configuración gamma como un objeto `MonitorGamma`.
+    - `brightness`: Brillo del monitor como un valor flotante.
+    - `panning`: Configuración de panning (opcional).
+    - `scaling_mode`: Modo de escalado (None, Full, Center, Full aspect).
+    - `tear_free`: Configuración de tear-free (auto, off, on).
     """
 
     md: Union[DisconnectedMonitorData, InactiveMonitorData, ActiveMonitorData]

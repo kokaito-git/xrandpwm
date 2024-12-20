@@ -569,9 +569,7 @@ class MonitorStateBundleAssembler:
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
             cmd += "| grep 'Gamma:' | sed 's/Gamma://'"
-            result = subprocess.run(
-                ["bash", "-c", cmd], capture_output=True, text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
             raw_gammas = result.stdout.strip().split(":")
             float_gammas = (float(g) for g in raw_gammas)
@@ -586,9 +584,7 @@ class MonitorStateBundleAssembler:
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
             cmd += "| grep 'Brightness:' | sed 's/Brightness://'"
-            result = subprocess.run(
-                ["bash", "-c", cmd], capture_output=True, text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
             brightness = float(result.stdout.strip())
             brightnesses[monitor_name] = brightness
@@ -604,9 +600,7 @@ class MonitorStateBundleAssembler:
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
             cmd += "| grep 'Panning:' -A2 | awk '{print $2}'"
-            result = subprocess.run(
-                ["bash", "-c", cmd], capture_output=True, text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
             stdout = result.stdout.strip()
             if not stdout:
@@ -680,9 +674,7 @@ class MonitorStateBundleAssembler:
         for monitor_name, raw_a_data in active_raw_advanced_datas.items():
             cmd = 'echo "{}"'.format(raw_a_data)
             cmd += "| grep TearFree: | sed 's/TearFree://'"
-            result = subprocess.run(
-                ["bash", "-c", cmd], capture_output=True, text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
 
             tfree = result.stdout.strip()
             if not tfree:
