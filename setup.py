@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="xrandpwm",
-    version="0.0.7",
+    version="0.0.8",
     packages=find_packages(),
     description="xrandr screen/monitors info collector classes (intended for bspwm)",
     author="kokaito",

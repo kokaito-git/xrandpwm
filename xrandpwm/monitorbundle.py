@@ -37,17 +37,17 @@ class MonitorStateBundle(BaseModel):
         return self.monitors
 
     def get_filtered_monitors(
-            self, state: Literal["disconnected", "inactive", "active"]
+            self, state: Literal["disconnected", "connected", "inactive", "active"]
     ) -> Dict[str, MonitorState]:
         """Filtra y retorna los monitores según su estado (`disconnected`, `inactive`, `active`)."""
         filtered = self.monitors
 
         if state == "disconnected":
             filtered = {n: m for n, m in filtered.items() if not m.connected}
+        elif state == "connected":
+            filtered = {n: m for n, m in filtered.items() if m.connected}
         elif state == "inactive":
-            filtered = {
-                n: m for n, m in filtered.items() if m.connected and not m.active
-            }
+            filtered = {n: m for n, m in filtered.items() if m.connected and not m.active}
         elif state == "active":
             filtered = {n: m for n, m in filtered.items() if m.active}
         else:
